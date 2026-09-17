@@ -271,6 +271,10 @@
       so "endgame" and "low on time" are confounded in any result you see here.</li>
       <li>At depth 12 the engine is far stronger than most of us, but it is not perfect, and shallow
       evaluations of quiet positions can wobble.</li>
+      <li>Each position is its own search, and the one after your move looks a ply deeper than the one
+      before it. When tactics sit just past that horizon, the two disagree and the gap gets charged to
+      your move. Moves the engine itself would have played are dropped for exactly this reason, but
+      the same wobble survives in smaller amounts elsewhere. Deeper settings shrink it.</li>
       <li>A small sample of games is a small sample. Ten games is a hint, not a diagnosis.</li>
     </ul>
   </details>
@@ -580,10 +584,19 @@ function finishGame(p, evals){
     });
   }
 
-  const mistakes = scored.filter(m => m.loss >= SERIOUS);
+  /* If the engine would have played the same move, it was not a mistake — whatever the two
+     evaluations say. The drop comes from search instability: the position before and the
+     position after are two independent searches, and the later one sees one ply further. When
+     tactics sit just past the first search's horizon, the second one finds them and the
+     difference gets blamed on a move that was, in fact, the best available. */
+  const engineAgreed = m => m.betterUci && m.playedUci
+                         && m.betterUci.slice(0,4) === m.playedUci.slice(0,4);
+  const real = scored.filter(m => !engineAgreed(m));
+
+  const mistakes = real.filter(m => m.loss >= SERIOUS);
   // Only worth showing as a near miss if it actually cost something.
-  const nearMisses = scored.filter(m => m.loss >= 100 && m.loss < SERIOUS)
-                           .sort((a,b) => b.loss - a.loss).slice(0, 3);
+  const nearMisses = real.filter(m => m.loss >= 100 && m.loss < SERIOUS)
+                         .sort((a,b) => b.loss - a.loss).slice(0, 3);
 
   return { url:game.url, opponent:o.opponent, won:o.won, lost:o.lost, drew:o.drew,
            colour:myColour, plies:history.length, mistakes, nearMisses, myMovesByPhase };
