@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiet Mistakes — the games you won and never looked at</title>
+<meta name="description" content="Most players review the games they lost. This looks at the ones you won, and finds the serious mistakes nobody punished.">
+<style>
+  :root{
+    --bg:#f7f7f9; --panel:#ffffff; --ink:#17171c; --muted:#6e7180;
+    --line:#e3e3e9; --accent:#4338ca; --accent-soft:#eceafb;
+    --warn:#a35a06; --warn-soft:#fdf0dc;
+    --sq-l:#f2eee6; --sq-d:#b0a394;
+    --radius:12px; --sq:46px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1014; --panel:#17181e; --ink:#e9e9ef; --muted:#9296a6;
+      --line:#262832; --accent:#8b8cf0; --accent-soft:#1e1d3a;
+      --warn:#e0a44d; --warn-soft:#2b2115;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1014; --panel:#17181e; --ink:#e9e9ef; --muted:#9296a6;
+    --line:#262832; --accent:#8b8cf0; --accent-soft:#1e1d3a;
+    --warn:#e0a44d; --warn-soft:#2b2115;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:40px 20px 80px}
+  .top{display:flex; align-items:flex-start; gap:16px; margin-bottom:10px}
+  h1{font-size:1.75rem; line-height:1.2; margin:0; letter-spacing:-.025em; font-weight:700; flex:1}
+  .lede{color:var(--muted); margin:0 0 30px; font-size:1rem; max-width:60ch}
+  h2{font-size:.78rem; margin:38px 0 12px; letter-spacing:.08em; text-transform:uppercase;
+     color:var(--muted); font-weight:600}
+  p{margin:0 0 14px}
+
+  #theme{background:transparent; border:1px solid var(--line); color:var(--muted);
+         padding:8px; border-radius:9px; line-height:0; flex:0 0 auto; display:flex}
+  #theme:hover{border-color:var(--accent); color:var(--accent)}
+
+  form{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;
+  }
+  label{display:block; font-size:.78rem; color:var(--muted); margin-bottom:6px;
+        letter-spacing:.02em; font-weight:500}
+  input,select{
+    font:inherit; padding:9px 11px; border:1px solid var(--line); border-radius:7px;
+    background:var(--bg); color:var(--ink); min-width:0;
+  }
+  input{width:220px}
+  .field{flex:1 1 auto}
+  button{
+    font:inherit; font-size:.9rem; font-weight:600;
+    padding:10px 20px; border:0; border-radius:9px; background:var(--accent);
+    color:#fff; cursor:pointer;
+  }
+  /* Dark text belongs only on the two buttons that carry the accent as a background.
+     Applying it to `button` painted every secondary button dark-on-dark and made the move
+     numbers unreadable. */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) #go,
+    :root:not([data-theme="light"]) #all{color:#12121c}
+  }
+  :root[data-theme="dark"] #go, :root[data-theme="dark"] #all{color:#12121c}
+  button:disabled{opacity:.45; cursor:default}
+
+  #status{margin-top:18px; font-size:.88rem; color:var(--muted);
+          font-variant-numeric:tabular-nums}
+  .bar{height:5px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:10px}
+  .bar > i{display:block; height:100%; width:0; background:var(--accent); transition:width .25s}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+        padding:20px; margin:0 0 16px}
+  .headline{font-size:1.25rem; line-height:1.45; margin:0}
+  .headline b{color:var(--accent)}
+
+  /* The whole row is the target, not just the button — a list of things you open should
+     behave like one. */
+  .grow{display:flex; gap:14px; align-items:center; padding:12px 14px; margin:0 -14px;
+        border-radius:10px; cursor:pointer; transition:background .12s}
+  .grow + .grow{box-shadow:0 -1px 0 var(--line)}
+  .grow:hover{background:var(--accent-soft); box-shadow:none}
+  .grow:hover + .grow{box-shadow:none}
+  .grow:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+  .grow.busy{pointer-events:none; opacity:.45}
+  .res{font-size:.66rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+       padding:4px 9px; border-radius:6px; white-space:nowrap; min-width:54px; text-align:center}
+  .res.win{color:var(--accent); background:var(--accent-soft)}
+  .res.loss{color:var(--warn); background:var(--warn-soft)}
+  .res.draw{color:var(--muted); background:var(--line)}
+  .grow:hover .res.win{background:var(--panel)}
+  .grow .who{flex:1; min-width:0; font-size:.95rem}
+  .grow .rt{color:var(--muted); font-variant-numeric:tabular-nums}
+  .grow .sub{display:block; color:var(--muted); font-size:.8rem; margin-top:2px}
+  .grow .pick{font-size:.82rem; color:var(--muted); white-space:nowrap; opacity:0;
+              transition:opacity .12s}
+  .grow:hover .pick, .grow:focus-visible .pick{opacity:1; color:var(--accent); font-weight:600}
+  .more{display:block; width:100%; margin-top:12px; padding:10px; background:transparent;
+        border:1px dashed var(--line); color:var(--muted); font-size:.83rem; font-weight:500}
+  .more:hover{border-color:var(--accent); color:var(--accent)}
+  .empty{color:var(--muted); font-size:.92rem; margin:0}
+  .allbar{display:flex; justify-content:flex-end; align-items:center; gap:14px; margin-top:16px}
+  .allnote{color:var(--muted); font-size:.8rem; font-variant-numeric:tabular-nums}
+
+  .game{padding:16px 0; border-top:1px solid var(--line)}
+  .game:first-of-type{border-top:0; padding-top:0}
+  .ghead{display:flex; gap:10px; align-items:center; margin-bottom:10px}
+  .ghead .opp{font-size:.95rem}
+  .moves{display:flex; flex-wrap:wrap; gap:8px}
+  button.mv{display:flex; flex-direction:column; gap:2px; align-items:flex-start;
+       background:transparent; border:1px solid var(--line); border-radius:9px; cursor:pointer;
+       padding:8px 12px; line-height:1.3; color:var(--ink); text-align:left; font:inherit}
+  button.mv:hover{border-color:var(--accent)}
+  button.mv.on{border-color:var(--accent); background:var(--accent-soft)}
+  button.mv b{font-size:.95rem; font-weight:700; color:var(--ink);
+              font-variant-numeric:tabular-nums}
+  button.mv .alt{font-size:.8rem; color:var(--accent); font-weight:500}
+  button.mv .cost{font-size:.73rem; color:var(--muted); font-variant-numeric:tabular-nums}
+
+  .bpanel{margin-top:16px; display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start}
+  .board{display:grid; grid-template-columns:repeat(8, var(--sq));
+         grid-auto-rows:var(--sq); border-radius:8px; overflow:hidden; flex:0 0 auto;
+         box-shadow:0 1px 3px rgba(0,0,0,.14), 0 0 0 1px var(--line)}
+  .sq{display:flex; align-items:center; justify-content:center; position:relative}
+  /* The board keeps its own light/dark contrast in both themes. Tinting it for dark mode made
+     the black pieces disappear into the dark squares — a board is already a contrast device. */
+  .sq.l{background:var(--sq-l)} .sq.d{background:var(--sq-d)}
+  .sq.from{box-shadow:inset 0 0 0 3px var(--accent)}
+  .sq.to{box-shadow:inset 0 0 0 3px var(--accent)}
+  .sq.played{box-shadow:inset 0 0 0 3px var(--warn)}
+  .sq.to.played{box-shadow:inset 0 0 0 3px var(--warn), inset 0 0 0 6px var(--accent)}
+  .co{position:absolute; font-size:9px; font-weight:700; letter-spacing:.02em;
+      color:#00000055; pointer-events:none}
+  .sq.d .co{color:#ffffff88}
+  .co.f{right:3px; bottom:1px} .co.r{left:3px; top:1px}
+  .pc{font-size:calc(var(--sq) * .74); line-height:1}
+  .pc.b{color:#16171a} .pc.w{color:#fff; text-shadow:0 0 1px #000, 0 0 2px #000,
+        -.6px -.6px 0 #000, .6px -.6px 0 #000, -.6px .6px 0 #000, .6px .6px 0 #000}
+  .bcap{flex:1 1 230px; min-width:210px}
+  .bcap p{margin:0 0 10px; font-size:.92rem}
+  .bcap .alt2{color:var(--accent)}
+  .bcap .unp2{color:var(--muted)}
+  .bcap a{color:inherit}
+
+  table{width:100%; border-collapse:collapse; font-family:ui-sans-serif,system-ui,sans-serif;
+        font-size:.92rem}
+  th,td{text-align:left; padding:9px 0; border-top:1px solid var(--line)}
+  th{color:var(--muted); font-weight:600; font-size:.78rem; letter-spacing:.04em;
+     text-transform:uppercase; border-top:0}
+  td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+  .peak{color:var(--warn); font-weight:700}
+
+  details{margin-top:28px; border-top:1px solid var(--line); padding-top:18px}
+  summary{cursor:pointer; color:var(--muted); font-size:.9rem}
+  details p, details li{font-size:.9rem; color:var(--muted)}
+  details ul{padding-left:18px; margin:10px 0}
+  footer{margin-top:44px; padding-top:18px; border-top:1px solid var(--line);
+         color:var(--muted); font-size:.82rem; line-height:1.65}
+  footer a{color:inherit}
+  .err{color:var(--warn); background:var(--warn-soft); padding:12px 14px; border-radius:9px;
+       font-size:.92rem}
+  [hidden]{display:none !important}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+  @media (max-width:560px){
+    :root{--sq:38px}
+    input{width:100%} .field{flex:1 1 100%} #go{width:100%}
+    h1{font-size:1.45rem}
+  }
+</style>
+<script>
+  /* Runs before first paint, so a chosen theme never flashes the other one. */
+  try {
+    const t = localStorage.getItem('quiet-mistakes:theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch {}
+</script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>The games you won and never looked at</h1>
+    <button id="theme" type="button" title="Switch theme" aria-label="Switch theme"></button>
+  </div>
+  <p class="lede">Almost everyone reviews their losses. But a mistake your opponent failed to punish is
+  still a mistake — and it is invisible, because the game ended fine. This looks at your recent games
+  and finds the serious ones nobody made you pay for.</p>
+
+  <form id="f">
+    <div class="field">
+      <label for="u">Chess.com username</label>
+      <input id="u" placeholder="e.g. adrros07" autocomplete="off" spellcheck="false" required>
+    </div>
+    <div>
+      <label for="n">Games</label>
+      <select id="n">
+        <option>6</option><option selected>10</option><option>20</option>
+        <option>50</option><option>100</option>
+      </select>
+    </div>
+    <div>
+      <label for="d">Depth</label>
+      <select id="d">
+        <option value="10">10 — faster</option>
+        <option value="12" selected>12 — balanced</option>
+        <option value="14">14 — slower</option>
+      </select>
+    </div>
+    <button id="go" type="submit">Look</button>
+  </form>
+
+  <div id="status" hidden></div>
+  <div class="bar" id="barwrap" hidden><i id="bar"></i></div>
+  <div id="error" class="err" hidden style="margin-top:18px"></div>
+
+  <div id="pickWrap" hidden>
+    <h2>Your recent games</h2>
+    <p class="lede" style="margin-bottom:14px; font-size:.95rem" id="pickLede"></p>
+    <div class="card"><div id="picker"></div></div>
+  </div>
+
+  <div id="out" hidden>
+    <h2>What it found</h2>
+    <div class="card"><p class="headline" id="headline"></p></div>
+
+    <div id="quietWrap" hidden>
+      <h2 id="quietHead">Worth reopening</h2>
+      <p class="lede" id="quietLede" style="margin-bottom:14px; font-size:.95rem"></p>
+      <div class="card" id="quiet"></div>
+    </div>
+
+    <h2>Where the mistakes actually were</h2>
+    <div class="card">
+      <table>
+        <thead><tr>
+          <th>Phase</th><th class="num">Moves</th>
+          <th class="num">Serious mistakes</th><th class="num">Per 100 moves</th>
+        </tr></thead>
+        <tbody id="phases"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <details>
+    <summary>How this decides what counts as a mistake</summary>
+    <p>Every position is evaluated by Stockfish 10, running in your browser. Nothing is uploaded;
+    the only network request is to Chess.com's public games API.</p>
+    <ul>
+      <li><b>A serious mistake</b> is a move that loses 300 centipawns or more — about the value of a
+      knight — against the engine's view of the position before it.</li>
+      <li><b>Evaluations are clamped to ±10 pawns</b> before comparing, so going from completely winning
+      to merely winning is not counted as a blunder.</li>
+      <li><b>Unpunished</b> means that two plies later the position had returned to within 150 centipawns
+      of where it stood before the mistake. Your opponent did not take what you gave them.</li>
+      <li><b>Opening</b> is the first 12 moves. <b>Endgame</b> begins when the non-pawn material left on
+      the board — queens 9, rooks 5, minors 3 — falls to 20 or less. Everything between is the middlegame.</li>
+    </ul>
+    <p>These thresholds are conventions, not laws. They are written here so you can disagree with them.</p>
+  </details>
+
+  <details>
+    <summary>What this cannot tell you</summary>
+    <ul>
+      <li>It reads no clock. A mistake in time trouble looks identical to one made with ten minutes left,
+      so "endgame" and "low on time" are confounded in any result you see here.</li>
+      <li>At depth 12 the engine is far stronger than most of us, but it is not perfect, and shallow
+      evaluations of quiet positions can wobble.</li>
+      <li>A small sample of games is a small sample. Ten games is a hint, not a diagnosis.</li>
+    </ul>
+  </details>
+
+  <footer>
+    Built by <a href="https://www.chess.com/member/adrros07">Adrian Rosales</a>.
+    Games via the public <a href="https://www.chess.com/announcements/view/published-data-api">Chess.com
+    Published-Data API</a>, read-only and one request at a time. Nothing is uploaded anywhere;
+    what it keeps — your username, your settings, and the engine's numbers for games already
+    analysed — stays in this browser.
+    <br>
+    Analysis by <a href="https://github.com/nmrugg/stockfish.js">Stockfish.js</a>, licensed under the
+    <a href="engine/COPYING-stockfish.txt">GNU General Public License v3</a> — an unmodified build,
+    shipped here in full. Move handling by <a href="https://github.com/jhlywa/chess.js">chess.js</a>
+    (BSD 2-Clause). Board squares, piece glyphs and wording are this page's own.
+    <br><span id="cacheline"></span>
+    <br><span id="ver" style="opacity:.6"></span>
+  </footer>
+</div>
+
+<script type="module">
+import { Chess } from './engine/chess.esm.js';
+
+const $ = id => document.getElementById(id);
+const CLAMP = 1000, SERIOUS = 300, FORGIVEN = 150, OPENING_MOVES = 12, ENDGAME_MATERIAL = 20;
+const PIECE_VAL = { q:9, r:5, b:3, n:3 };
+
+/* ---------- engine ---------- */
+class Engine {
+  constructor(){
+    this.w = new Worker('./engine/stockfish.js');
+    this.queue = [];
+    this.w.onmessage = e => {
+      const line = typeof e.data === 'string' ? e.data : e.data?.data ?? '';
+      const h = this.queue[0];
+      if (h) h(line);
+    };
+  }
+  cmd(s){ this.w.postMessage(s); }
+  /* Resolves on the first line the predicate accepts. The timeout exists because a silent
+     engine would otherwise hang the page with no error and no way out; a position that times
+     out resolves to null and is skipped rather than reported wrongly. */
+  once(pred, ms = 25000){
+    return new Promise(res => {
+      let done = false;
+      const finish = v => {
+        if (done) return;
+        done = true; clearTimeout(t);
+        const at = this.queue.indexOf(h);
+        if (at >= 0) this.queue.splice(at, 1);
+        res(v);
+      };
+      const h = line => { const v = pred(line); if (v !== undefined) finish(v); };
+      const t = setTimeout(() => finish(null), ms);
+      this.queue.push(h);
+    });
+  }
+  async init(){
+    this.cmd('uci');
+    if (await this.once(l => l.startsWith('uciok') ? true : undefined, 40000) === null)
+      throw new Error('The engine did not start. Reload the page and try again.');
+    this.cmd('setoption name Hash value 32');
+    this.cmd('isready');
+    await this.once(l => l.startsWith('readyok') ? true : undefined);
+  }
+  /** { cp, best } — centipawns from the perspective of the side to move, and the engine's move */
+  async evalFen(fen, depth){
+    this.cmd('position fen ' + fen);
+    this.cmd('go depth ' + depth);
+    let last = null;
+    return this.once(line => {
+      if (line.startsWith('info ') && line.includes(' score ')){
+        const m = line.match(/ score (cp|mate) (-?\d+)/);
+        if (m) last = m[1] === 'mate'
+          ? (Number(m[2]) > 0 ? 100000 - Number(m[2]) * 100 : -100000 - Number(m[2]) * 100)
+          : Number(m[2]);
+      }
+      if (line.startsWith('bestmove')){
+        const b = line.split(' ')[1];
+        return { cp: last ?? 0, best: (b && b !== '(none)') ? b : null };
+      }
+      return undefined;
+    });
+  }
+  stop(){ this.w.terminate(); }
+}
+
+/* ---------- cache of engine evaluations ----------
+   Stockfish is the slow part, and a finished game's evaluation at a given depth is a fixed
+   fact. Storing it turns a second look at the same game into something instant. Stored per
+   browser: nothing is shared, nothing leaves the machine. */
+const EV = 'qm:ev1:';
+
+const evKey = (url, depth) => EV + depth + ':' + url;
+
+function cacheGet(url, depth){
+  if (!url) return null;
+  try {
+    const raw = localStorage.getItem(evKey(url, depth));
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    return v && v.e ? v.e : null;
+  } catch { return null; }
+}
+
+function cachePut(url, depth, evals){
+  if (!url || !Object.keys(evals).length) return;
+  const write = () => localStorage.setItem(evKey(url, depth),
+    JSON.stringify({ t: Date.now(), e: evals }));
+  try { write(); }
+  catch {
+    // Out of room. Drop the oldest half rather than failing, and never let this break a run.
+    try { pruneCache(0.5); write(); } catch {}
+  }
+}
+
+function cacheKeys(){
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith(EV)) out.push(k);
+    }
+  } catch {}
+  return out;
+}
+
+function pruneCache(fraction){
+  const dated = cacheKeys().map(k => {
+    let t = 0;
+    try { t = JSON.parse(localStorage.getItem(k))?.t || 0; } catch {}
+    return { k, t };
+  }).sort((a,b) => a.t - b.t);
+  for (const { k } of dated.slice(0, Math.ceil(dated.length * fraction))){
+    try { localStorage.removeItem(k); } catch {}
+  }
+}
+
+function clearCache(){
+  for (const k of cacheKeys()){ try { localStorage.removeItem(k); } catch {} }
+}
+
+/* ---------- helpers ---------- */
+const clamp = v => Math.max(-CLAMP, Math.min(CLAMP, v));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const LOST = ['checkmated','timeout','resigned','lose','abandoned','threecheck',
+              'kingofthehill','bughousepartnerlose'];
+
+/** Who I was in this game and how it ended — needed before analysing, and again after. */
+function outcomeOf(game, me){
+  const myColour = game.white.username.toLowerCase() === me ? 'w' : 'b';
+  const mine = myColour === 'w' ? game.white : game.black;
+  const them = myColour === 'w' ? game.black : game.white;
+  const won  = mine.result === 'win';
+  const lost = LOST.includes(mine.result);
+  return { myColour, opponent: them.username, oppRating: them.rating,
+           won, lost, drew: !won && !lost };
+}
+
+function nonPawnMaterial(fen){
+  let t = 0;
+  for (const ch of fen.split(' ')[0]) {
+    const v = PIECE_VAL[ch.toLowerCase()];
+    if (v) t += v;
+  }
+  return t;
+}
+function uciToSan(fen, uci){
+  if (!uci || uci.length < 4) return null;
+  try {
+    const c = new Chess(fen);
+    const mv = c.move({ from: uci.slice(0,2), to: uci.slice(2,4), promotion: uci[4] || undefined });
+    return mv ? mv.san : null;
+  } catch { return null; }
+}
+/* A finished position has no move to search. Stockfish can answer a mated position with
+   silence, which used to hang the whole run on any game that ended in checkmate — and the
+   score is not a matter of opinion anyway, so it is computed here instead of asked for. */
+function terminalEval(fen){
+  try {
+    const c = new Chess(fen);
+    if (c.isCheckmate()) return { cp: -100000, best: null };  // the side to move has lost
+    if (c.isStalemate() || c.isInsufficientMaterial()) return { cp: 0, best: null };
+  } catch {}
+  return null;
+}
+
+function phaseOf(moveNumber, fen){
+  if (moveNumber <= OPENING_MOVES) return 'Opening';
+  return nonPawnMaterial(fen) <= ENDGAME_MATERIAL ? 'Endgame' : 'Middlegame';
+}
+
+async function fetchGames(user, want){
+  const base = 'https://api.chess.com/pub/player/' + encodeURIComponent(user.toLowerCase().trim());
+  const ar = await fetch(base + '/games/archives');
+  if (ar.status === 404) throw new Error('No Chess.com player by that name.');
+  if (!ar.ok) throw new Error('Chess.com replied ' + ar.status + '.');
+  const { archives } = await ar.json();
+  if (!archives?.length) throw new Error('That account has no games on record.');
+  const out = [];
+  for (let i = archives.length - 1; i >= 0 && out.length < want; i--){
+    const r = await fetch(archives[i]);
+    if (!r.ok) continue;
+    const { games } = await r.json();
+    for (let j = games.length - 1; j >= 0 && out.length < want; j--){
+      const g = games[j];
+      if (g.rules !== 'chess' || !g.pgn) continue;
+      out.push(g);
+    }
+  }
+  if (!out.length) throw new Error('Found the account, but no standard chess games to read.');
+  return out;
+}
+
+/* ---------- analysis ----------
+   Split in two on purpose. `prepare` does all the chess-library work with no engine involved,
+   so before a single position is evaluated we already know exactly how many evaluations the
+   whole run needs. That is what makes the progress bar a real count instead of a guess. */
+function prepare(game, me){
+  const chess = new Chess();
+  try { chess.loadPgn(game.pgn); }
+  catch { return { skipped:'could not be read' }; }
+  const history = chess.history({ verbose:true });
+  if (history.length < 6) return { skipped:'was too short' };
+
+  const o = outcomeOf(game, me);
+  const board = new Chess();
+  const fens = [board.fen()];
+  for (const mv of history){ board.move(mv.san); fens.push(board.fen()); }
+
+  const wanted = new Set();
+  for (let i = 0; i < history.length; i++){
+    if (history[i].color === o.myColour){ wanted.add(i); wanted.add(i + 1); }
+  }
+  // Settle the terminal positions here so they never reach the engine, and so they never
+  // count toward the progress total.
+  const known = {};
+  const needed = [];
+  for (const i of [...wanted].sort((a,b)=>a-b)){
+    const t = terminalEval(fens[i]);
+    if (t) known[i] = t; else needed.push(i);
+  }
+  return { game, o, history, fens, needed, known };
+}
+
+async function analysePrepared(engine, p, depth, tick){
+  const { game, o, history, fens, needed, known } = p;
+  const myColour = o.myColour;
+
+  const evals = new Array(fens.length).fill(null);
+  for (const [i, v] of Object.entries(known)) evals[i] = v;
+
+  // A finished game never changes, so neither does what the engine says about it at a given
+  // depth. Only the engine's numbers are stored — the thresholds are applied fresh every
+  // time, so changing what counts as a mistake never means re-running Stockfish.
+  const cached = cacheGet(game.url, depth);
+  if (cached && needed.every(i => cached[i] !== undefined)){
+    // Cached positions still move the bar, but must not enter the timing sample — they are
+    // instant, and would make the estimate for the remaining real work far too optimistic.
+    for (const i of needed){ evals[i] = cached[i]; tick(false); }
+    return { ...finishGame(p, evals), fromCache: true };
+  }
+
+  const fresh = {};
+  for (const i of needed){
+    evals[i] = await engine.evalFen(fens[i], depth);
+    fresh[i] = evals[i];
+    tick();
+  }
+  cachePut(game.url, depth, fresh);
+
+  return finishGame(p, evals);
+}
+
+/* Turning engine numbers into an opinion. Separate from the analysis on purpose: this is the
+   part with the thresholds in it, so it can be re-run over cached evaluations for free. */
+function finishGame(p, evals){
+  const { game, o, history, fens } = p;
+  const myColour = o.myColour;
+
+  // Score every one of my moves, not only the ones that cross the line. A run that finds
+  // nothing should still be able to show its work — "no mistakes" is much easier to trust
+  // when the page can also say what the closest calls were.
+  const scored = [];
+  const myMovesByPhase = { Opening:0, Middlegame:0, Endgame:0 };
+  for (let i = 0; i < history.length; i++){
+    if (history[i].color !== myColour) continue;
+    const moveNumber = Math.floor(i / 2) + 1;
+    const phase = phaseOf(moveNumber, fens[i]);
+    myMovesByPhase[phase]++;
+    const before = evals[i], afterOpp = evals[i+1];
+    if (!before || !afterOpp) continue;
+    const myBefore = clamp(before.cp);
+    const loss = myBefore - clamp(-afterOpp.cp);
+    const later = evals[i + 2];
+    scored.push({
+      moveNumber, phase,
+      ply: i + 1,
+      san: history[i].san,
+      better: uciToSan(fens[i], before.best),
+      betterUci: before.best,
+      fen: fens[i],
+      playedUci: history[i].from + history[i].to,
+      loss: Math.round(loss),
+      unpunished: !!(later && clamp(later.cp) >= myBefore - FORGIVEN)
+    });
+  }
+
+  const mistakes = scored.filter(m => m.loss >= SERIOUS);
+  // Only worth showing as a near miss if it actually cost something.
+  const nearMisses = scored.filter(m => m.loss >= 100 && m.loss < SERIOUS)
+                           .sort((a,b) => b.loss - a.loss).slice(0, 3);
+
+  return { url:game.url, opponent:o.opponent, won:o.won, lost:o.lost, drew:o.drew,
+           colour:myColour, plies:history.length, mistakes, nearMisses, myMovesByPhase };
+}
+
+/* ---------- board ---------- */
+const GLYPH = { k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟' };
+const FILES = 'abcdefgh';
+
+function boardHTML(fen, orientation, hi = {}){
+  const rows = fen.split(' ')[0].split('/');
+  const grid = [];
+  for (let r = 0; r < 8; r++){
+    const cells = [];
+    for (const ch of rows[r]){
+      if (/\d/.test(ch)) for (let k = 0; k < Number(ch); k++) cells.push(null);
+      else cells.push(ch);
+    }
+    grid.push(cells);
+  }
+  const order = orientation === 'b'
+    ? { ranks:[...Array(8).keys()].reverse(), files:[...Array(8).keys()].reverse() }
+    : { ranks:[...Array(8).keys()],           files:[...Array(8).keys()] };
+
+  const lastRank = order.ranks[order.ranks.length - 1];
+  const firstFile = order.files[0];
+
+  let out = '<div class="board">';
+  for (const r of order.ranks){
+    for (const f of order.files){
+      const piece = grid[r][f];
+      const square = FILES[f] + (8 - r);
+      const dark = (r + f) % 2 === 1;
+      const marks = [
+        hi.from === square ? 'from' : '',
+        hi.to   === square ? 'to'   : '',
+        hi.played === square ? 'played' : ''
+      ].filter(Boolean).join(' ');
+      const white = piece && piece === piece.toUpperCase();
+      // Coordinates only on the two outer edges, the way a printed diagram does it.
+      const coords = (r === lastRank ? `<i class="co f">${FILES[f]}</i>` : '')
+                   + (f === firstFile ? `<i class="co r">${8 - r}</i>` : '');
+      out += `<div class="sq ${dark?'d':'l'} ${marks}">` + coords +
+        (piece ? `<span class="pc ${white?'w':'b'}">${GLYPH[piece.toLowerCase()]}</span>` : '') +
+        '</div>';
+    }
+  }
+  return out + '</div>';
+}
+
+function openBoard(panel, r, m){
+  const hi = {
+    from: m.betterUci ? m.betterUci.slice(0,2) : null,
+    to:   m.betterUci ? m.betterUci.slice(2,4) : null,
+    played: m.playedUci ? m.playedUci.slice(2,4) : null
+  };
+  panel.innerHTML =
+    boardHTML(m.fen, r.colour, hi) +
+    `<div class="bcap">
+       <p><b>Move ${m.moveNumber}.</b> This is the position before you played
+       <b>${m.san}</b>${m.better ? `, which cost ${(m.loss/100).toFixed(1)} pawns.` : '.'}</p>
+       ${m.better ? `<p class="alt2"><b>${m.better}</b> was better. Your move is outlined in amber,
+         the engine's in blue.</p>` : ''}
+       ${m.unpunished ? `<p class="unp2">Your opponent did not punish it. The game moved on
+         and never told you.</p>` : ''}
+       <p><a href="${r.url}?move=${m.ply}" target="_blank" rel="noopener">Open this move on Chess.com</a></p>
+     </div>`;
+  panel.hidden = false;
+}
+
+/* ---------- ui ---------- */
+const say = t => { $('status').hidden = false; $('status').textContent = t; };
+const prog = p => { $('barwrap').hidden = false; $('bar').style.width = (p*100).toFixed(1) + '%'; };
+const fail = t => { $('error').hidden = false; $('error').textContent = t; };
+
+/* The file's own timestamp, so "am I looking at the current build?" is answerable at a glance
+   instead of by guessing at the browser cache. */
+$('ver').textContent = 'This file: ' + document.lastModified;
+
+/* Anything kept on someone's machine should be visible and removable from the page that
+   put it there. */
+function paintCacheLine(){
+  const keys = cacheKeys();
+  const n = keys.length;
+  let chars = 0;
+  for (const k of keys){
+    try { chars += k.length + (localStorage.getItem(k)?.length || 0); } catch {}
+  }
+  const kb = Math.round(chars / 1024);
+  $('cacheline').innerHTML = n
+    ? `${n} game${n>1?'s':''} analysed and kept in this browser (${kb} KB of the ~5,000 KB a
+       browser allows), so opening them again is instant.
+       <a href="#" id="clear">Forget them</a>.`
+    : '';
+  $('clear')?.addEventListener('click', e => {
+    e.preventDefault();
+    clearCache();
+    paintCacheLine();
+  });
+}
+paintCacheLine();
+
+/* ---------- theme: system by default, overridable, remembered ---------- */
+const THEME = 'quiet-mistakes:theme';
+// Drawn rather than typed: the sun and moon characters render as flat asterisks in some fonts.
+const SUN = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2M12 19.4v2
+  M2.6 12h2M19.4 12h2M5.4 5.4l1.4 1.4M17.2 17.2l1.4 1.4M18.6 5.4l-1.4 1.4M6.8 17.2l-1.4 1.4"/></svg>`;
+const MOON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linejoin="round"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.2 8.2 0 1 0 20 14.2z"/></svg>`;
+
+function systemIsDark(){
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+}
+function currentTheme(){
+  return document.documentElement.dataset.theme || (systemIsDark() ? 'dark' : 'light');
+}
+function paintToggle(){
+  // The icon shows what you would switch TO, not what you are in.
+  const dark = currentTheme() === 'dark';
+  $('theme').innerHTML = dark ? SUN : MOON;
+  $('theme').title = dark ? 'Switch to light' : 'Switch to dark';
+}
+$('theme').addEventListener('click', () => {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem(THEME, next); } catch {}
+  paintToggle();
+});
+// Follow the system while nothing has been chosen here.
+window.matchMedia?.('(prefers-color-scheme: dark)')
+  .addEventListener?.('change', () => { if (!document.documentElement.dataset.theme) paintToggle(); });
+paintToggle();
+
+/* ---------- remember the last search, in this browser only ---------- */
+const STORE = 'quiet-mistakes:last';
+
+function remember(){
+  try {
+    localStorage.setItem(STORE, JSON.stringify({
+      user: $('u').value.trim(), n: $('n').value, d: $('d').value
+    }));
+  } catch { /* private window, blocked storage — not worth mentioning */ }
+}
+
+function restore(){
+  let s;
+  try { s = JSON.parse(localStorage.getItem(STORE) || 'null'); }
+  catch { return; }
+  if (!s || typeof s.user !== 'string') return;
+  $('u').value = s.user;
+  const pick = (el, v) => { if ([...el.options].some(o => o.value === v)) el.value = v; };
+  pick($('n'), s.n); pick($('d'), s.d);
+  $('u').select();
+}
+restore();
+
+/* ---------- step one: fetch, parse, list. No engine yet. ---------- */
+$('f').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const user = $('u').value.trim();
+  if (!user) return;
+  const want = Number($('n').value);
+  const me = user.toLowerCase();
+
+  $('go').disabled = true;
+  $('out').hidden = true; $('error').hidden = true;
+  $('pickWrap').hidden = true; $('barwrap').hidden = true;
+  try {
+    say('Asking Chess.com for your games…');
+    const games = await fetchGames(user, want);
+    remember();
+
+    // Parse everything up front. It costs milliseconds, it drops games that cannot be read
+    // before they are ever offered, and it tells us the exact size of the job.
+    const parsed = games.map(g => prepare(g, me));
+    const preps = parsed.filter(p => !p.skipped);
+    if (!preps.length) throw new Error('Found the games, but none of them could be read.');
+
+    $('status').hidden = true;
+    showPicker(preps, parsed.length - preps.length);
+  } catch (e){
+    fail(e.message || String(e));
+    $('status').hidden = true;
+  } finally {
+    $('go').disabled = false;
+  }
+});
+
+function rowHTML(p, i){
+  const o = p.o;
+  const cls = o.won ? 'win' : o.lost ? 'loss' : 'draw';
+  const label = o.won ? 'Won' : o.lost ? 'Lost' : 'Drew';
+  const when = p.game.end_time
+    ? new Date(p.game.end_time * 1000).toLocaleDateString(undefined,
+        { day:'numeric', month:'short', year:'numeric' })
+    : '';
+  const bits = [p.game.time_class, o.myColour === 'w' ? 'as white' : 'as black',
+                `${Math.ceil(p.history.length / 2)} moves`, when].filter(Boolean);
+  return `<div class="grow" data-i="${i}" role="button" tabindex="0">
+    <span class="res ${cls}">${label}</span>
+    <span class="who">vs ${esc(o.opponent)}${o.oppRating ? ` <span class="rt">${o.oppRating}</span>` : ''}
+      <span class="sub">${esc(bits.join(' · '))}</span></span>
+    <span class="pick">Analyse</span>
+  </div>`;
+}
+
+/* The page argues that the games worth reopening are the ones you did not lose, so that is
+   what the list shows. The losses are still there, one click away — hidden by default, never
+   dropped. */
+function showPicker(preps, dropped = 0){
+  const kept = preps.filter(p => !p.o.lost);
+  const lost = preps.filter(p => p.o.lost);
+  let showingLost = false;
+
+  // What is actually left to compute — positions already cached at this depth are free.
+  const fresh = list => {
+    const depth = Number($('d').value);
+    return list.reduce((s, p) => {
+      const c = cacheGet(p.game.url, depth);
+      return s + (c ? p.needed.filter(i => c[i] === undefined).length : p.needed.length);
+    }, 0);
+  };
+
+  const draw = () => {
+    const visible = showingLost ? preps : kept;
+    $('picker').innerHTML =
+      (visible.length ? visible.map(p => rowHTML(p, preps.indexOf(p))).join('')
+                      : `<p class="empty">Every one of these ${preps.length} you lost. Open them below.</p>`)
+      + (lost.length ? `<button class="more" id="more" type="button">${
+            showingLost ? 'Hide the ' + lost.length + ' you lost'
+                        : 'Also show the ' + lost.length + ' you lost'}</button>` : '')
+      + (visible.length > 1 ? `<div class="allbar">
+            <span class="allnote">${(n => n
+                ? n.toLocaleString() + ' positions to evaluate'
+                : 'all already analysed — instant')(fresh(visible))}</span>
+            <button id="all" type="button">Analyse all ${visible.length}</button></div>` : '');
+
+    $('more')?.addEventListener('click', () => { showingLost = !showingLost; draw(); });
+
+    const lock = on => $('picker').querySelectorAll('button, .grow')
+                        .forEach(b => { b.classList.toggle('busy', on); b.disabled = on; });
+    const go = list => { lock(true); run(list).finally(() => lock(false)); };
+
+    $('picker').querySelectorAll('.grow').forEach(row => {
+      const fire = () => go([preps[Number(row.dataset.i)]]);
+      row.addEventListener('click', fire);
+      row.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); fire(); }
+      });
+    });
+    $('all')?.addEventListener('click', () => go(visible));
+  };
+
+  $('pickLede').textContent =
+    (kept.length === 1 && !lost.length
+      ? 'One game to look at.'
+      : `${kept.length} you did not lose. Open one, or run them all — a single game takes seconds.`)
+    + (dropped ? ` ${dropped} could not be read and ${dropped > 1 ? 'are' : 'is'} not listed.` : '');
+  draw();
+  // Changing the depth changes how much is already cached, so the estimate has to follow it.
+  $('d').onchange = draw;
+  $('pickWrap').hidden = false;
+}
+
+/* ---------- step two: analyse whatever was chosen ---------- */
+async function run(live){
+  const depth = Number($('d').value);
+  $('out').hidden = true; $('error').hidden = true;
+  let engine;
+  try {
+    say('Starting the engine…');
+    engine = new Engine();
+    await engine.init();
+
+    // The games arrive already parsed, so the exact size of the job is known before the
+    // first position is evaluated. That is what makes the bar a count and not a guess.
+    const total = live.reduce((s, p) => s + p.needed.length, 0);
+    let done = 0, label = '', lastAt = performance.now();
+
+    /* Time left is measured on this machine as it runs. It uses a rolling window of the last
+       few dozen evaluations rather than the average since the start: the opening positions are
+       much faster than the middlegame ones, and a running average keeps dragging the estimate
+       back toward a rate that is no longer true. */
+    const recent = [];
+    const eta = () => {
+      if (recent.length < 12) return '';
+      const per = recent.reduce((a,b) => a+b, 0) / recent.length;
+      const left = Math.round(per * (total - done) / 1000);
+      if (left < 5) return ' · almost done';
+      return left < 90 ? ` · about ${left}s left`
+                       : ` · about ${Math.round(left / 60)} min left`;
+    };
+    const tick = (fromEngine = true) => {
+      const now = performance.now();
+      if (fromEngine){
+        recent.push(now - lastAt);
+        if (recent.length > 40) recent.shift();
+      }
+      lastAt = now;
+      done++;
+      prog(done / total);
+      say(`${label} — ${done} of ${total} positions${eta()}`);
+    };
+
+    const results = [];
+    for (let i = 0; i < live.length; i++){
+      label = live.length === 1 ? 'Reading that game' : `Game ${i+1} of ${live.length}`;
+      results.push(await analysePrepared(engine, live[i], depth, tick));
+    }
+    prog(1);
+    engine.stop();
+    render(results);
+    const reused = results.filter(r => r.fromCache).length;
+    say(`Done — ${results.length} game${results.length>1?'s':''} read`
+        + (reused ? `, ${reused} from earlier runs.` : '.'));
+    paintCacheLine();
+    $('out').scrollIntoView({ behavior:'smooth', block:'start' });
+  } catch (e){
+    fail(e.message || String(e));
+    say('');
+    $('status').hidden = true; $('barwrap').hidden = true;
+    engine?.stop();
+  }
+}
+
+function render(results){
+  const all = results.flatMap(r => r.mistakes);
+  const total = all.length;
+  const unp = all.filter(m => m.unpunished).length;
+
+  const phaseMoves = { Opening:0, Middlegame:0, Endgame:0 };
+  results.forEach(r => {
+    for (const k of Object.keys(phaseMoves)) phaseMoves[k] += r.myMovesByPhase[k] || 0;
+  });
+
+  const rows = ['Opening','Middlegame','Endgame'].map(name => {
+    const count = all.filter(m => m.phase === name).length;
+    const moves = phaseMoves[name] || 0;
+    const rate = moves ? (count / moves * 100) : 0;
+    return { name, count, moves, rate };
+  });
+  const peak = rows.reduce((a,b) => b.rate > a.rate ? b : a, rows[0]);
+
+  $('phases').innerHTML = rows.map(r => `
+    <tr>
+      <td${r.name===peak.name && r.count ? ' class="peak"':''}>${r.name}</td>
+      <td class="num">${r.moves}</td>
+      <td class="num">${r.count}</td>
+      <td class="num${r.name===peak.name && r.count ? ' peak':''}">${r.rate.toFixed(1)}</td>
+    </tr>`).join('');
+
+  // Normally this section is the point of the tool: mistakes hiding in games you didn't lose.
+  // But if you deliberately picked one game, show its mistakes whatever the result — you asked
+  // for that game, not for the argument.
+  const single = results.length === 1;
+  let quiet = results.filter(r => (single || !r.lost) && r.mistakes.length);
+  let usingNear = false;
+
+  // Nothing crossed the threshold. Rather than a dead end, show the moves that cost the most
+  // anyway, labelled for what they are.
+  if (!quiet.length){
+    const near = results.filter(r => r.nearMisses?.length)
+                        .map(r => ({ ...r, mistakes: r.nearMisses }));
+    if (near.length){ quiet = near; usingNear = true; }
+  }
+
+  $('quietHead').textContent = usingNear ? 'Closest calls'
+                             : single ? 'What went wrong' : 'Worth reopening';
+  $('quietLede').textContent = usingNear
+    ? `Nothing reached ${SERIOUS} centipawns. These cost the most anyway — click one to see it.`
+    : single ? 'Click a move to see the position just before it.'
+    : "You didn't lose these. They still contain a serious mistake.";
+  if (quiet.length){
+    $('quietWrap').hidden = false;
+    $('quiet').innerHTML = quiet.map((r, gi) => {
+      const label = r.won ? 'Won' : r.lost ? 'Lost' : 'Drew';
+      const sorted = [...r.mistakes].sort((a,b) => a.ply - b.ply);
+      const moves = sorted.map((m, mi) =>
+        `<button class="mv" data-g="${gi}" data-m="${mi}">
+           <b>${m.moveNumber}. ${m.san}</b>${m.better ? `<span class="alt">${m.better} was better</span>` : ''}
+           <span class="cost">−${(m.loss/100).toFixed(1)}${m.unpunished ? ' · unpunished' : ''}</span>
+         </button>`).join('');
+      return `<div class="game">
+        <div class="ghead">
+          <span class="res ${r.won?'win':r.lost?'loss':'draw'}">${label}</span>
+          <span class="opp">vs ${esc(r.opponent)}</span>
+        </div>
+        <div class="moves">${moves}</div>
+        <div class="bpanel" id="bp${gi}" hidden></div>
+      </div>`;
+    }).join('');
+
+    const sortedByGame = quiet.map(r => [...r.mistakes].sort((a,b) => a.ply - b.ply));
+    $('quiet').querySelectorAll('button.mv').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const gi = Number(btn.dataset.g), mi = Number(btn.dataset.m);
+        const panel = $('bp' + gi);
+        const already = btn.classList.contains('on');
+        $('quiet').querySelectorAll('button.mv').forEach(b => b.classList.remove('on'));
+        if (already){ panel.hidden = true; return; }
+        btn.classList.add('on');
+        openBoard(panel, quiet[gi], sortedByGame[gi][mi]);
+      });
+    });
+  } else {
+    $('quietWrap').hidden = true;
+  }
+
+  const g = results.length, many = total > 1;
+  let head;
+  if (!total){
+    const moves = Object.values(phaseMoves).reduce((a,b)=>a+b, 0);
+    const worst = results.flatMap(r => r.nearMisses || [])
+                         .reduce((a,b) => !a || b.loss > a.loss ? b : a, null);
+    head = `Nothing over ${SERIOUS} centipawns across <b>${moves} of your moves</b> in
+            ${g} game${g>1?'s':''}.`;
+    head += worst
+      ? ` The costliest was <b>${worst.moveNumber}. ${worst.san}</b>, at
+          ${(worst.loss/100).toFixed(1)} pawns — under the line this page draws.`
+      : ` Not one move cost even a pawn.`;
+    head += ` ${g > 1 ? `${g} games are` : 'One game is'} too few to see a pattern either way.`;
+  } else {
+    head = `Across ${g} game${g>1?'s':''} you made <b>${total} serious mistake${many?'s':''}</b>.
+            ${many ? 'Most of them happened' : 'It happened'} in the
+            <b>${peak.name.toLowerCase()}</b>.`;
+    if (unp){
+      head += many
+        ? ` <b>${Math.round(unp/total*100)}%</b> of them went unpunished — your opponent didn't take
+            what you offered, so the game never told you.`
+        : ` It went unpunished — your opponent didn't take what you offered, so the game never told you.`;
+    }
+    // Only say this about games that were actually survived. When one game was picked by hand
+    // and it was a loss, there is nothing quiet about it.
+    const survived = quiet.filter(r => !r.lost);
+    if (survived.length){
+      head += !many
+        ? ` And it is sitting in a game you did not lose.`
+        : survived.length === 1
+          ? ` One of them is sitting in a game you did not lose.`
+          : ` They are spread across ${survived.length} games you did not lose.`;
+    }
+  }
+  $('headline').innerHTML = head;
+  $('out').hidden = false;
+}
+</script>
+</body>
+</html>
