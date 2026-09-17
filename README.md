@@ -10,11 +10,11 @@ Everything runs client-side. Nothing is uploaded. The username and the two setti
 ## Files
 
 ```
-index.html              the whole app
-engine/chess.esm.js     chess.js 1.4.0 — PGN parsing and move generation
-engine/stockfish.js     Stockfish 10 compiled to WASM (single-threaded)
-engine/stockfish.wasm   the engine binary (367 KB)
-engine/COPYING-stockfish.txt  GPL v3, the licence Stockfish.js is distributed under
+public/index.html              the whole app
+public/engine/chess.esm.js     chess.js 1.4.0 — PGN parsing and move generation
+public/engine/stockfish.js     Stockfish 10 compiled to WASM (single-threaded)
+public/engine/stockfish.wasm   the engine binary (367 KB)
+public/engine/COPYING-stockfish.txt  GPL v3, the licence Stockfish.js is distributed under
 ```
 
 No build step, no dependencies to install, no external CDN at runtime.
@@ -38,24 +38,26 @@ Their docs ask for a user-agent carrying contact information. A page running in 
 set one — `User-Agent` is a forbidden header for `fetch` — so each request carries the visitor's
 own browser and IP, exactly as if they had opened chess.com themselves.
 
-## Deploy — Cloudflare Pages (easiest, ~3 minutes)
+## Deploy — Cloudflare Workers
 
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Upload assets**.
-2. Name it `quiet-mistakes`.
-3. Drag in the **contents** of this folder — `index.html` and the `engine/` folder.
-   (Drag the files, not the enclosing folder, or everything lands one level too deep.)
-4. Deploy. You get `https://quiet-mistakes.pages.dev`.
+The site is served as a Workers static-assets project: no Worker script, no build step.
+`wrangler.jsonc` points at `public/`, and everything else in the repo stays unpublished.
 
-## Deploy — Wrangler CLI
+From the dashboard: **Workers & Pages** → **Create** → **Continue with GitHub** → pick this
+repo. Leave **Build command** empty. Cloudflare reads `wrangler.jsonc` for the rest.
+
+Or from the CLI:
 
 ```bash
-npx wrangler pages deploy . --project-name quiet-mistakes
+npx wrangler deploy
 ```
+
+Every push to `main` redeploys.
 
 ## Test it locally first
 
 ```bash
-python3 -m http.server 8080
+cd public && python3 -m http.server 8080
 # then open http://localhost:8080
 ```
 
@@ -64,7 +66,9 @@ ES module both need a real origin.
 
 ## Checks after deploying
 
-- Enter `adrros07`, 10 games, depth 12. It should finish in well under a minute.
-- The `.wasm` must be served as `application/wasm`. Cloudflare Pages does this by default;
-  if the engine never starts, that is the first thing to look at in the network tab.
+- Enter `adrros07`, 6 games, depth 10. It should finish in seconds.
+- The `.wasm` must arrive as `application/wasm`. If the engine never starts, that is the first
+  thing to look at in the network tab.
 - The only external request should be to `api.chess.com`.
+- The footer prints the file's own timestamp, which is the quickest way to tell a stale cache
+  from a stale deploy.
