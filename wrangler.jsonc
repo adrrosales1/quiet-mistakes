@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "quiet-mistakes",
+  "compatibility_date": "2026-09-17",
+  // No Worker script: this is a static site. Everything under public/ is served as-is,
+  // which is also why the config file itself lives outside that folder.
+  "assets": {
+    "directory": "./public/",
+    "not_found_handling": "404-page"
+  }
+}
