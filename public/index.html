@@ -131,10 +131,21 @@
   /* The board keeps its own light/dark contrast in both themes. Tinting it for dark mode made
      the black pieces disappear into the dark squares — a board is already a contrast device. */
   .sq.l{background:var(--sq-l)} .sq.d{background:var(--sq-d)}
-  .sq.from{box-shadow:inset 0 0 0 3px var(--accent)}
-  .sq.to{box-shadow:inset 0 0 0 3px var(--accent)}
-  .sq.played{box-shadow:inset 0 0 0 3px var(--warn)}
-  .sq.to.played{box-shadow:inset 0 0 0 3px var(--warn), inset 0 0 0 6px var(--accent)}
+  /* Moves are drawn as arrows, the way analysis boards do it. An outline on the destination
+     alone left the moved piece unmarked — and when both moves were made by the same kind of
+     piece, the engine's origin square looked like yours. The squares get a light tint so the
+     piece that moves is obvious even before reading the arrow. Fixed colours, not theme
+     tokens: the board looks the same in both themes, so its marks should too. */
+  .board{position:relative}
+  .sq.mine::after, .sq.eng::after{content:""; position:absolute; inset:0; pointer-events:none}
+  .sq .pc{position:relative; z-index:1}
+  .sq.mine::after{background:rgba(217,119,6,.32)}
+  .sq.eng::after{background:rgba(67,56,202,.22)}
+  .sq.mine.eng::after{background:linear-gradient(135deg, rgba(217,119,6,.34) 50%, rgba(67,56,202,.26) 50%)}
+  .arrows{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:.82rem; color:var(--muted); margin:0 0 10px}
+  .legend i{display:inline-block; width:18px; height:4px; border-radius:2px; vertical-align:middle;
+            margin-right:6px}
   .co{position:absolute; font-size:9px; font-weight:700; letter-spacing:.02em;
       color:#00000055; pointer-events:none}
   .sq.d .co{color:#ffffff88}
@@ -631,9 +642,8 @@ function boardHTML(fen, orientation, hi = {}){
       const square = FILES[f] + (8 - r);
       const dark = (r + f) % 2 === 1;
       const marks = [
-        hi.from === square ? 'from' : '',
-        hi.to   === square ? 'to'   : '',
-        hi.played === square ? 'played' : ''
+        (hi.mine && (hi.mine.from === square || hi.mine.to === square)) ? 'mine' : '',
+        (hi.eng  && (hi.eng.from  === square || hi.eng.to  === square)) ? 'eng'  : ''
       ].filter(Boolean).join(' ');
       const white = piece && piece === piece.toUpperCase();
       // Coordinates only on the two outer edges, the way a printed diagram does it.
@@ -644,22 +654,55 @@ function boardHTML(fen, orientation, hi = {}){
         '</div>';
     }
   }
-  return out + '</div>';
+  return out + arrowsSVG(orientation, hi) + '</div>';
+}
+
+const ARROW = { mine:'#d97706', eng:'#4338ca' };
+
+/* Where a square sits on screen, in board units (0–8), for either orientation. */
+function squareCentre(square, orientation){
+  const file = FILES.indexOf(square[0]), rank = Number(square[1]);
+  const col = orientation === 'b' ? 7 - file : file;
+  const row = orientation === 'b' ? rank - 1 : 8 - rank;
+  return [col + 0.5, row + 0.5];
+}
+
+function arrowsSVG(orientation, hi){
+  const draw = (mv, colour, id) => {
+    if (!mv || !mv.from || !mv.to) return '';
+    const [x1, y1] = squareCentre(mv.from, orientation);
+    const [x2, y2] = squareCentre(mv.to, orientation);
+    // Stop short of the centre so the head sits on the square without burying the piece.
+    const len = Math.hypot(x2 - x1, y2 - y1), k = (len - 0.32) / len;
+    return `<line x1="${x1}" y1="${y1}" x2="${x1 + (x2 - x1) * k}" y2="${y1 + (y2 - y1) * k}"
+      stroke="${colour}" stroke-width="0.17" stroke-linecap="round" opacity="0.88"
+      marker-end="url(#${id})"/>`;
+  };
+  const marker = (id, colour) =>
+    `<marker id="${id}" viewBox="0 0 10 10" refX="4" refY="5" markerWidth="3" markerHeight="3"
+       orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${colour}"/></marker>`;
+  // Unique ids per board, so two open boards never share a marker definition.
+  const u = Math.random().toString(36).slice(2, 8);
+  return `<svg class="arrows" viewBox="0 0 8 8" aria-hidden="true">
+    <defs>${marker('am' + u, ARROW.mine)}${marker('ae' + u, ARROW.eng)}</defs>
+    ${draw(hi.eng, ARROW.eng, 'ae' + u)}
+    ${draw(hi.mine, ARROW.mine, 'am' + u)}
+  </svg>`;
 }
 
 function openBoard(panel, r, m){
   const hi = {
-    from: m.betterUci ? m.betterUci.slice(0,2) : null,
-    to:   m.betterUci ? m.betterUci.slice(2,4) : null,
-    played: m.playedUci ? m.playedUci.slice(2,4) : null
+    mine: m.playedUci ? { from: m.playedUci.slice(0,2), to: m.playedUci.slice(2,4) } : null,
+    eng:  m.betterUci ? { from: m.betterUci.slice(0,2), to: m.betterUci.slice(2,4) } : null
   };
   panel.innerHTML =
     boardHTML(m.fen, r.colour, hi) +
     `<div class="bcap">
        <p><b>Move ${m.moveNumber}.</b> This is the position before you played
        <b>${m.san}</b>${m.better ? `, which cost ${(m.loss/100).toFixed(1)} pawns.` : '.'}</p>
-       ${m.better ? `<p class="alt2"><b>${m.better}</b> was better. Your move is outlined in amber,
-         the engine's in blue.</p>` : ''}
+       ${m.better ? `<p class="alt2"><b>${m.better}</b> was better.</p>` : ''}
+       <p class="legend"><span><i style="background:${ARROW.mine}"></i>You played ${m.san}</span>
+         ${m.better ? `<span><i style="background:${ARROW.eng}"></i>Engine: ${m.better}</span>` : ''}</p>
        ${m.unpunished ? `<p class="unp2">Your opponent did not punish it. The game moved on
          and never told you.</p>` : ''}
        <p><a href="${r.url}?move=${m.ply}" target="_blank" rel="noopener">Open this move on Chess.com</a></p>
